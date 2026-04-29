@@ -65,19 +65,45 @@ export default function DashboardPage() {
               </Button>
             </div>
             <div className="space-y-3">
-              {data.todaysTasks.map((task) => (
-                <Card key={task._id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-slate-100">{task.title}</p>
-                    <p className="text-sm text-slate-400 mt-1">{task.description}</p>
+              {data.todaysTasks?.length > 0 ? (
+                data.todaysTasks.map((task) => (
+                  <Card key={task._id} className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-100">{task.title}</p>
+                      <p className="text-sm text-slate-400 mt-1">{task.description}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-primary-500/20 text-primary-400">
+                        {task.priority}
+                      </span>
+                    </div>
+                  </Card>
+                ))
+              ) : (
+                <div className="p-8 border-2 border-dashed border-dark-border rounded-xl text-center flex flex-col items-center justify-center bg-dark-card/50">
+                  <div className="w-16 h-16 rounded-full bg-primary-500/10 flex items-center justify-center mb-4">
+                    <span className="text-3xl">☕</span>
                   </div>
-                  <div className="flex gap-2">
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-primary-500/20 text-primary-400">
-                      {task.priority}
-                    </span>
-                  </div>
-                </Card>
-              ))}
+                  <h3 className="text-lg font-semibold text-slate-100 mb-1">You're all caught up!</h3>
+                  <p className="text-sm text-slate-400">No tasks due today. Take a break or plan ahead.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Scratchpad Feature */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-slate-100">Quick Scratchpad</h2>
+                <span className="text-xs text-slate-400">Saves automatically</span>
+              </div>
+              <Card className="p-0 overflow-hidden border-dark-border focus-within:border-primary-500 transition-colors">
+                <textarea
+                  className="w-full h-40 bg-transparent text-slate-100 p-4 resize-none focus:outline-none placeholder-slate-500"
+                  placeholder="Jot down a quick thought, idea, or phone number..."
+                  defaultValue={localStorage.getItem('nexus_scratchpad') || ''}
+                  onChange={(e) => localStorage.setItem('nexus_scratchpad', e.target.value)}
+                />
+              </Card>
             </div>
           </div>
 
