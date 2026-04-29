@@ -3,8 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { MainLayout } from '../../components/layout';
 import { Card, Button, Input, Badge, Modal } from '../../components/ui';
 import { tasksService } from '../../services';
-import { setTasks, addTask } from '../../store/slices/tasksSlice';
-import { Plus } from 'lucide-react';
+import {
+  setTasks,
+  addTask,
+  updateTask as updateTaskAction,
+  deleteTask as deleteTaskAction,
+} from '../../store/slices/tasksSlice';
+import { Check, Plus, Trash2 } from 'lucide-react';
 
 const STATUS_COLORS = {
   todo: 'bg-slate-700',
@@ -57,6 +62,27 @@ export default function TasksPage() {
     }
   };
 
+  const handleStatusChange = async (task, status) => {
+    try {
+      const response = await tasksService.update(task._id, {
+        ...task,
+        status,
+      });
+      dispatch(updateTaskAction(response.data.task));
+    } catch (error) {
+      console.error('Failed to update task:', error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      await tasksService.delete(taskId);
+      dispatch(deleteTaskAction(taskId));
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
+  };
+
   const groupedTasks = {
     todo: tasks.filter((t) => t.status === 'todo'),
     doing: tasks.filter((t) => t.status === 'doing'),
@@ -95,6 +121,34 @@ export default function TasksPage() {
                         Due: {new Date(task.dueDate).toLocaleDateString()}
                       </p>
                     )}
+                    <div className="mt-4 flex items-center justify-between gap-2">
+                      <div className="flex gap-2">
+                        {status !== 'todo' && (
+                          <Button size="sm" variant="secondary" onClick={() => handleStatusChange(task, 'todo')}>
+                            To Do
+                          </Button>
+                        )}
+                        {status !== 'doing' && (
+                          <Button size="sm" variant="secondary" onClick={() => handleStatusChange(task, 'doing')}>
+                            Doing
+                          </Button>
+                        )}
+                        {status !== 'done' && (
+                          <Button size="sm" variant="secondary" onClick={() => handleStatusChange(task, 'done')}>
+                            <Check size={14} />
+                            Done
+                          </Button>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTask(task._id)}
+                        className="p-1 hover:bg-dark-hover rounded transition-colors text-red-400 hover:text-red-500"
+                        aria-label={`Delete ${task.title}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </Card>
                 ))}
               </div>

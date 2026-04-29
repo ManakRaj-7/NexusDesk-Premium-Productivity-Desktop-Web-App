@@ -101,7 +101,7 @@ export const updateTask = async (req, res, next) => {
           priority,
           dueDate: dueDate ? new Date(dueDate) : null,
           folderId,
-          ...(status === 'done' && { completedAt: Date.now() }),
+          completedAt: status === 'done' ? Date.now() : null,
           updatedAt: Date.now(),
         },
       },

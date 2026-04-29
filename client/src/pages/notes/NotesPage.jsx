@@ -3,7 +3,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { MainLayout } from '../../components/layout';
 import { Card, Button, Input, Modal } from '../../components/ui';
 import { notesService } from '../../services';
-import { setNotes, addNote } from '../../store/slices/notesSlice';
+import {
+  setNotes,
+  addNote,
+  updateNote as updateNoteAction,
+  deleteNote as deleteNoteAction,
+} from '../../store/slices/notesSlice';
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
 
 export default function NotesPage() {
@@ -27,19 +32,50 @@ export default function NotesPage() {
     fetchNotes();
   }, [dispatch, search]);
 
-  const handleCreateNote = async (e) => {
+  const openCreateModal = () => {
+    setSelectedNote(null);
+    setFormData({ title: '', content: '' });
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (note) => {
+    setSelectedNote(note);
+    setFormData({ title: note.title, content: note.content || '' });
+    setIsModalOpen(true);
+  };
+
+  const handleSaveNote = async (e) => {
     e.preventDefault();
     try {
-      const response = await notesService.create({
-        title: formData.title,
-        content: formData.content,
-        tags: [],
-      });
-      dispatch(addNote(response.data.note));
+      if (selectedNote) {
+        const response = await notesService.update(selectedNote._id, {
+          ...selectedNote,
+          title: formData.title,
+          content: formData.content,
+        });
+        dispatch(updateNoteAction(response.data.note));
+      } else {
+        const response = await notesService.create({
+          title: formData.title,
+          content: formData.content,
+          tags: [],
+        });
+        dispatch(addNote(response.data.note));
+      }
       setFormData({ title: '', content: '' });
+      setSelectedNote(null);
       setIsModalOpen(false);
     } catch (error) {
-      console.error('Failed to create note:', error);
+      console.error('Failed to save note:', error);
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    try {
+      await notesService.delete(noteId);
+      dispatch(deleteNoteAction(noteId));
+    } catch (error) {
+      console.error('Failed to delete note:', error);
     }
   };
 
@@ -48,7 +84,7 @@ export default function NotesPage() {
       <div className="p-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-slate-100">Notes</h1>
-          <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+          <Button variant="primary" onClick={openCreateModal}>
             <Plus size={16} />
             New Note
           </Button>
@@ -68,7 +104,7 @@ export default function NotesPage() {
             <Card
               key={note._id}
               className="p-4 cursor-pointer hover:glow transition-all"
-              onClick={() => setSelectedNote(note)}
+              onClick={() => openEditModal(note)}
             >
               <h3 className="font-semibold text-slate-100 mb-2 line-clamp-1">{note.title}</h3>
               <p className="text-sm text-slate-400 line-clamp-3 mb-4">{note.content || 'No content'}</p>
@@ -83,8 +119,27 @@ export default function NotesPage() {
                     </span>
                   ))}
                 </div>
-                <button className="p-1 hover:bg-dark-hover rounded transition-colors">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openEditModal(note);
+                  }}
+                  className="p-1 hover:bg-dark-hover rounded transition-colors"
+                  aria-label={`Edit ${note.title}`}
+                >
                   <Edit2 size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleDeleteNote(note._id);
+                  }}
+                  className="p-1 hover:bg-dark-hover rounded transition-colors text-red-400 hover:text-red-500"
+                  aria-label={`Delete ${note.title}`}
+                >
+                  <Trash2 size={16} />
                 </button>
               </div>
             </Card>
@@ -94,10 +149,10 @@ export default function NotesPage() {
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          title="Create Note"
+          title={selectedNote ? 'Edit Note' : 'Create Note'}
           size="lg"
         >
-          <form onSubmit={handleCreateNote} className="space-y-4">
+          <form onSubmit={handleSaveNote} className="space-y-4">
             <Input
               label="Title"
               value={formData.title}
@@ -119,7 +174,7 @@ export default function NotesPage() {
                 Cancel
               </Button>
               <Button variant="primary" type="submit">
-                Create Note
+                {selectedNote ? 'Save Note' : 'Create Note'}
               </Button>
             </div>
           </form>
