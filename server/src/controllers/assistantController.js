@@ -4,6 +4,9 @@ import Conversation from '../models/Conversation.js';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Cache the last successful model name to reduce API calls
+let lastWorkingModel = "gemini-2.5-flash";
+
 export const sendMessage = async (req, res, next) => {
   try {
     const { message, conversationId } = req.body;
@@ -14,74 +17,64 @@ export const sendMessage = async (req, res, next) => {
     }
 
     if (!conversation) {
-      conversation = new Conversation({ user: req.user.userId, messages: [] });
+      conversation = new Conversation({ userId: req.user.userId, messages: [] });
     }
 
-    // 1. Web Search Augmentation
+    // 1. Simple Web Search (Optional)
     let searchContext = "";
-    if (/\?|what|how|why|who|when/i.test(message) && message.length > 5) {
+    if (/\?|how|what|who/i.test(message) && message.length > 8) {
       try {
         const ddgRes = await axios.get(`https://api.duckduckgo.com/`, {
           params: { q: message, format: 'json', no_html: 1, skip_disambig: 1 },
-          timeout: 3000
+          timeout: 2500
         });
-        if (ddgRes.data.AbstractText) searchContext += `\nInfo: ${ddgRes.data.AbstractText}`;
-        
-        const wikiRes = await axios.get(`https://en.wikipedia.org/w/api.php`, {
-          params: { action: 'query', list: 'search', srsearch: message, utf8: '', format: 'json', srlimit: 1 },
-          timeout: 3000
-        });
-        if (wikiRes.data.query?.search?.[0]) {
-          const pageRes = await axios.get(`https://en.wikipedia.org/w/api.php`, {
-            params: { action: 'query', prop: 'extracts', exintro: true, explaintext: true, titles: wikiRes.data.query.search[0].title, format: 'json' },
-            timeout: 3000
-          });
-          const pages = pageRes.data.query?.pages;
-          const pageId = pages ? Object.keys(pages)[0] : null;
-          if (pageId && pageId !== '-1') searchContext += `\nWikipedia: ${pages[pageId].extract.substring(0, 500)}`;
-        }
-      } catch (err) { console.error('Search tool skipped'); }
+        if (ddgRes.data.AbstractText) searchContext += `\nContext: ${ddgRes.data.AbstractText}`;
+      } catch (err) { /* Silent fail */ }
     }
 
     // 2. Build History
-    const history = conversation.messages.slice(-8).map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
+    const history = conversation.messages.slice(-6).map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }],
     }));
 
-    // 3. Robust Model Fallback System
-    const modelNames = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-pro"];
+    // 3. Smart Model Selection
+    const modelsToTry = [lastWorkingModel, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-pro"].filter((v, i, a) => a.indexOf(v) === i);
     let assistantReply = "";
     let lastError = null;
 
-    for (const modelName of modelNames) {
+    const systemMsg = "You are NexusDesk AI. Be extremely concise and bold key terms.";
+    const userPrompt = searchContext ? `CONTEXT: ${searchContext}\n\nUSER: ${message}` : message;
+
+    for (const modelName of modelsToTry) {
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
-        const systemPrompt = "You are NexusDesk AI. Be extremely concise and bold key terms. Don't use filler.";
-        const finalPrompt = searchContext ? `CONTEXT: ${searchContext}\n\nUSER: ${message}` : message;
-
-        const chat = model.startChat({ 
-          history,
-          systemInstruction: systemPrompt 
-        });
         
-        const result = await chat.sendMessage(finalPrompt);
-        assistantReply = result.response.text();
-        if (assistantReply) break; 
+        // Try with history first
+        try {
+          const result = await model.generateContent({
+            contents: [...history, { role: 'user', parts: [{ text: `${systemMsg}\n\n${userPrompt}` }] }]
+          });
+          assistantReply = result.response.text();
+        } catch (e) {
+          // Fallback to no-history for this model if history fails (fixes 400s)
+          const result = await model.generateContent(`${systemMsg}\n\n${userPrompt}`);
+          assistantReply = result.response.text();
+        }
+
+        if (assistantReply) {
+          lastWorkingModel = modelName; // Save successful model
+          break;
+        }
       } catch (err) {
         lastError = err;
-        console.warn(`Model ${modelName} failed/busy, trying next...`);
-        if (err.status === 429 || err.status === 503) {
-           // Wait a tiny bit if rate limited
-           await new Promise(r => setTimeout(r, 500));
-        }
+        console.warn(`Model ${modelName} failed:`, err.message);
+        if (err.status === 429) break; // If rate limited, don't spam others
         continue;
       }
     }
 
-    if (!assistantReply) {
-      throw lastError || new Error("All AI models are currently busy.");
-    }
+    if (!assistantReply) throw lastError || new Error("AI Busy");
 
     // 4. Save and Respond
     conversation.messages.push({ role: 'user', content: message, timestamp: new Date() });
@@ -90,30 +83,37 @@ export const sendMessage = async (req, res, next) => {
 
     res.status(201).json({ message: 'Sent', conversation });
   } catch (error) {
-    console.error('Final Assistant Error:', error);
+    console.error('AI Error:', error.message);
     const status = error.status || 500;
-    const msg = status === 429 ? "Google's free tier is currently overloaded. Please wait 30 seconds and try again!" : "The AI is currently resetting. Please try again!";
-    res.status(status).json({ message: msg });
+    res.status(status).json({ 
+      message: status === 429 ? "Google is busy. Wait 30s!" : `AI Error: ${error.message}`
+    });
   }
 };
 
 export const getConversation = async (req, res, next) => {
   try {
-    const conversation = await Conversation.findOne({ _id: req.params.id, user: req.user.userId });
+    const conversation = await Conversation.findOne({
+      _id: req.params.id,
+      userId: req.user.userId
+    });
     res.json(conversation);
   } catch (e) { next(e); }
 };
 
 export const getConversations = async (req, res, next) => {
   try {
-    const conversations = await Conversation.find({ user: req.user.userId }).sort({ updatedAt: -1 }).limit(20);
+    const conversations = await Conversation.find({ userId: req.user.userId }).sort({ updatedAt: -1 });
     res.json(conversations);
   } catch (e) { next(e); }
 };
 
 export const deleteConversation = async (req, res, next) => {
   try {
-    await Conversation.findOneAndDelete({ _id: req.params.id, user: req.user.userId });
+    await Conversation.findOneAndDelete({ 
+      _id: req.params.id, 
+      userId: req.user.userId 
+    });
     res.json({ message: 'Deleted' });
   } catch (e) { next(e); }
 };

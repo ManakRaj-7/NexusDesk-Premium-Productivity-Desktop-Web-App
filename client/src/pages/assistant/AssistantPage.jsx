@@ -121,8 +121,9 @@ export default function AssistantPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask me anything..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-slate-100 px-4 py-2 placeholder-slate-600 text-sm"
+            disabled={isLoading}
+            placeholder={isLoading ? "Thinking..." : "Ask me anything..."}
+            className={`flex-1 bg-transparent border-none focus:ring-0 text-slate-100 px-4 py-2 placeholder-slate-600 text-sm ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
           <Button
             variant="primary"
@@ -130,7 +131,7 @@ export default function AssistantPage() {
             disabled={!input.trim() || isLoading}
             className="rounded-xl px-6 py-2"
           >
-            <Send size={18} />
+            {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send size={18} />}
           </Button>
         </form>
       </div>
