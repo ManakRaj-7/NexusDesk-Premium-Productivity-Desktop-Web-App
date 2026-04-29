@@ -1,12 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MainLayout } from '../../components/layout';
 import { Card, Button } from '../../components/ui';
+import { sessionsService } from '../../services';
 import { Play, Pause, RotateCcw, Clock } from 'lucide-react';
 
+const SESSION_DURATIONS = {
+  pomodoro: 25 * 60,
+  focus: 60 * 60,
+};
+
 export default function FocusPage() {
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [timeLeft, setTimeLeft] = useState(SESSION_DURATIONS.pomodoro);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionType, setSessionType] = useState('pomodoro');
+  const [statusMessage, setStatusMessage] = useState('');
+  const completedRef = useRef(false);
+
+  const durationMinutes = useMemo(
+    () => Math.round(SESSION_DURATIONS[sessionType] / 60),
+    [sessionType]
+  );
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -15,8 +28,49 @@ export default function FocusPage() {
   const handlePause = () => setIsRunning(false);
   const handleReset = () => {
     setIsRunning(false);
-    setTimeLeft(sessionType === 'pomodoro' ? 25 * 60 : 60 * 60);
+    completedRef.current = false;
+    setStatusMessage('');
+    setTimeLeft(SESSION_DURATIONS[sessionType]);
   };
+
+  const handleSessionTypeChange = (type) => {
+    setSessionType(type);
+    setIsRunning(false);
+    completedRef.current = false;
+    setStatusMessage('');
+    setTimeLeft(SESSION_DURATIONS[type]);
+  };
+
+  useEffect(() => {
+    if (!isRunning) return undefined;
+
+    const interval = window.setInterval(() => {
+      setTimeLeft((current) => Math.max(current - 1, 0));
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [isRunning]);
+
+  useEffect(() => {
+    if (timeLeft > 0 || !isRunning || completedRef.current) return;
+
+    const saveSession = async () => {
+      completedRef.current = true;
+      setIsRunning(false);
+      try {
+        await sessionsService.create({
+          type: sessionType,
+          duration: durationMinutes,
+        });
+        setStatusMessage('Session saved. Nice work.');
+      } catch (error) {
+        console.error('Failed to save focus session:', error);
+        setStatusMessage('Session completed, but saving failed.');
+      }
+    };
+
+    saveSession();
+  }, [durationMinutes, isRunning, sessionType, timeLeft]);
 
   return (
     <MainLayout>
@@ -32,6 +86,9 @@ export default function FocusPage() {
               {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
             </div>
             <p className="text-slate-400 mb-6 capitalize">{sessionType} Session</p>
+            {statusMessage && (
+              <p className="text-sm text-primary-300 mb-6">{statusMessage}</p>
+            )}
 
             <div className="flex gap-4 justify-center mb-6">
               <button
@@ -59,7 +116,7 @@ export default function FocusPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <button
-              onClick={() => setSessionType('pomodoro')}
+              onClick={() => handleSessionTypeChange('pomodoro')}
               className={`p-4 rounded-lg font-medium transition-all ${
                 sessionType === 'pomodoro'
                   ? 'bg-primary-500 text-white'
@@ -69,7 +126,7 @@ export default function FocusPage() {
               Pomodoro (25m)
             </button>
             <button
-              onClick={() => setSessionType('focus')}
+              onClick={() => handleSessionTypeChange('focus')}
               className={`p-4 rounded-lg font-medium transition-all ${
                 sessionType === 'focus'
                   ? 'bg-primary-500 text-white'

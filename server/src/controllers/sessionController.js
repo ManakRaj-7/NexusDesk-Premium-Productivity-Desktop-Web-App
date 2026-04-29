@@ -22,6 +22,7 @@ export const createSession = async (req, res, next) => {
 
     if (!lastSession) {
       user.focusStreak.current = 1;
+      user.focusStreak.longestStreak = Math.max(user.focusStreak.longestStreak, 1);
     } else {
       const lastDate = new Date(lastSession);
       lastDate.setHours(0, 0, 0, 0);
@@ -34,6 +35,7 @@ export const createSession = async (req, res, next) => {
         }
       } else if (diffDays > 1) {
         user.focusStreak.current = 1;
+        user.focusStreak.longestStreak = Math.max(user.focusStreak.longestStreak, 1);
       }
     }
 

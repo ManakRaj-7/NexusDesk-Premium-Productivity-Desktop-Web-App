@@ -99,6 +99,17 @@ export const linksService = {
     api.delete(`/links/${id}`),
 };
 
+export const sessionsService = {
+  create: (data) =>
+    api.post('/sessions', data),
+
+  getStats: (days = 7) =>
+    api.get('/sessions/stats', { params: { days } }),
+
+  delete: (id) =>
+    api.delete(`/sessions/${id}`),
+};
+
 export const settingsService = {
   get: () =>
     api.get('/settings'),

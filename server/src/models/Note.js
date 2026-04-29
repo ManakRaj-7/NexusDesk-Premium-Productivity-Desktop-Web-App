@@ -34,6 +34,7 @@ const noteSchema = new mongoose.Schema(
 noteSchema.index({ userId: 1, createdAt: -1 });
 noteSchema.index({ userId: 1, tags: 1 });
 noteSchema.index({ userId: 1, starred: 1 });
+noteSchema.index({ title: 'text', content: 'text', tags: 'text' });
 
 const Note = mongoose.model('Note', noteSchema);
 export default Note;
