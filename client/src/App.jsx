@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks';
-import { AppRoutes } from '../routes';
-import { initKeyboardShortcuts } from '../utils/keyboard';
+import { useAuth } from './hooks';
+import { AppRoutes } from './routes';
+import { initKeyboardShortcuts } from './utils/keyboard';
 
 export default function App() {
-  const navigate = useNavigate();
   const { isAuthenticated, getProfile } = useAuth();
   const [isInitializing, setIsInitializing] = useState(true);
 
