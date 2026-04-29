@@ -35,46 +35,75 @@ export const sendMessage = async (req, res, next) => {
       timestamp: new Date(),
     });
 
-    // Fetch real answer from Wikipedia
-    let assistantReply = "I'm sorry, I couldn't find an answer to that right now.";
-    try {
-      const searchRes = await axios.get(`https://en.wikipedia.org/w/api.php`, {
-        params: {
-          action: 'query',
-          list: 'search',
-          srsearch: message,
-          utf8: '',
-          format: 'json',
-        }
-      });
-      
-      const searchResults = searchRes.data.query.search;
-      if (searchResults && searchResults.length > 0) {
-        const title = searchResults[0].title;
-        const pageRes = await axios.get(`https://en.wikipedia.org/w/api.php`, {
-          params: {
-            action: 'query',
-            prop: 'extracts',
-            exintro: true,
-            explaintext: true,
-            titles: title,
-            format: 'json',
-          }
+    const lowerMsg = message.toLowerCase().trim();
+    const GREETINGS = ['hi', 'hello', 'hey', 'yo', 'sup', 'hi there', 'hello there'];
+    let assistantReply = "";
+
+    // 1. Handle Greetings
+    if (GREETINGS.some(g => lowerMsg === g || lowerMsg.startsWith(g + ' ')) || lowerMsg.length < 3) {
+      assistantReply = "Hey! I'm your NexusDesk AI. I'm connected to the web and can help you find info, manage your tasks, or just chat. What can I do for you today?";
+    } else {
+      // 2. Try DuckDuckGo for quick answers
+      try {
+        const ddgRes = await axios.get(`https://api.duckduckgo.com/`, {
+          params: { q: message, format: 'json', no_html: 1, skip_disambig: 1 },
+          timeout: 5000
         });
         
-        const pages = pageRes.data.query.pages;
-        const pageId = Object.keys(pages)[0];
-        const extract = pages[pageId].extract;
-        
-        if (extract) {
-          assistantReply = `According to my search on **${title}**:\n\n${extract}`;
+        if (ddgRes.data.AbstractText) {
+          assistantReply = ddgRes.data.AbstractText;
         }
-      } else {
-        assistantReply = "I couldn't find any factual information on that topic. Could you try rephrasing?";
+      } catch (ddgErr) {
+        console.error('DuckDuckGo API error:', ddgErr.message);
       }
-    } catch (apiErr) {
-      console.error('Wikipedia API error:', apiErr);
-      assistantReply = "I'm having trouble connecting to my knowledge base at the moment. Please try again later.";
+
+      // 3. Fallback to Wikipedia if no DDG answer
+      if (!assistantReply) {
+        try {
+          const searchRes = await axios.get(`https://en.wikipedia.org/w/api.php`, {
+            params: {
+              action: 'query',
+              list: 'search',
+              srsearch: message,
+              utf8: '',
+              format: 'json',
+            },
+            headers: { 'User-Agent': 'NexusDesk/1.0 (nexus@example.com)' },
+            timeout: 5000
+          });
+          
+          const searchResults = searchRes.data.query?.search;
+          if (searchResults && searchResults.length > 0) {
+            const title = searchResults[0].title;
+            const pageRes = await axios.get(`https://en.wikipedia.org/w/api.php`, {
+              params: {
+                action: 'query',
+                prop: 'extracts',
+                exintro: true,
+                explaintext: true,
+                titles: title,
+                format: 'json',
+              },
+              headers: { 'User-Agent': 'NexusDesk/1.0 (nexus@example.com)' },
+              timeout: 5000
+            });
+            
+            const pages = pageRes.data.query?.pages;
+            const pageId = pages ? Object.keys(pages)[0] : null;
+            const extract = pageId && pageId !== '-1' ? pages[pageId].extract : null;
+            
+            if (extract) {
+              assistantReply = `According to my research:\n\n${extract}`;
+            }
+          }
+        } catch (wikiErr) {
+          console.error('Wikipedia API error:', wikiErr.message);
+        }
+      }
+    }
+
+    if (!assistantReply) {
+      assistantReply = "I'm sorry, I'm having a hard time finding a specific answer for that. Can you try asking in a different way?";
     }
 
     conversation.messages.push({

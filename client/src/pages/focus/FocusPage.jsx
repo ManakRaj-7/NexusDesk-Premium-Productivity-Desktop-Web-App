@@ -68,6 +68,14 @@ export default function FocusPage() {
       completedRef.current = true;
       setIsRunning(false);
       
+      // Play notification sound
+      try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.play();
+      } catch (err) {
+        console.error('Failed to play sound:', err);
+      }
+      
       // We might not want to save breaks to the DB as "focus" sessions,
       // but the backend accepts them now.
       try {
