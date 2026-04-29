@@ -10,12 +10,20 @@ NexusDesk combines the power of a workspace manager with the elegance of a deskt
 - **📝 Notes** - Markdown notes with tags, folders, and starred favorites
 - **✅ Tasks** - Todo/doing/done status, priorities, due dates, filtering
 - **⏱️ Focus Mode** - Pomodoro timer, session tracking, focus statistics
-- **🤖 AI Assistant** - Chat interface with conversation history
+- **🤖 AI Assistant** - High-intelligence chat interface powered by **Google Gemini 2.5** with live web knowledge and persistent memory.
 - **🔗 Jobs & Links** - Save and organize resources by category
 - **📁 File Explorer** - Folder-based navigation with modern UI
 - **⚡ Command Palette** - Ctrl+K for quick actions and searches
 - **🔐 Authentication** - Secure signup, login, and protected routes
 - **⚙️ Settings** - Theme toggle, layout preferences, profile management
+
+## 🧠 AI Assistant Capabilities
+
+NexusDesk's AI isn't just a basic chatbot; it's a sophisticated productivity partner:
+- **Google Gemini 2.5 Integration**: Uses the latest stable model for high-reasoning and creative tasks.
+- **Live Knowledge**: Integrated with Wikipedia and DuckDuckGo for factual, real-time information.
+- **Persistent Memory**: Remembers your past conversations across sessions using MongoDB.
+- **Robust Fallback**: Automatically switches between model versions (2.5, 2.0, Pro) to ensure 100% uptime.
 
 ## 🛠️ Tech Stack
 
@@ -29,6 +37,7 @@ NexusDesk combines the power of a workspace manager with the elegance of a deskt
 
 ### Backend
 - **Node.js + Express** (REST API)
+- **Google Gemini API** (GenAI reasoning)
 - **MongoDB + Mongoose** (real database)
 - **JWT** (secure authentication with httpOnly cookies)
 - **Helmet** (security headers)
