@@ -6,6 +6,7 @@ export const Button = ({
   children, 
   className,
   disabled,
+  type = 'button',
   ...props 
 }) => {
   const baseStyles = 'font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2';
@@ -25,6 +26,7 @@ export const Button = ({
 
   return (
     <button
+      type={type}
       className={clsx(baseStyles, variants[variant], sizes[size], className)}
       disabled={disabled}
       {...props}

@@ -12,6 +12,17 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
+  if (err.name === 'ZodError') {
+    return res.status(400).json({
+      error: 'Invalid input provided',
+      code: 'VALIDATION_ERROR',
+      details: err.errors.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
+    });
+  }
+
   if (err.name === 'CastError') {
     return res.status(400).json({
       error: 'Invalid ID format',

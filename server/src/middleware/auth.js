@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 
 export const verifyAuth = (req, res, next) => {
   try {
-    const token = req.cookies.accessToken || req.headers.authorization?.split(' ')[1];
+    const token = req.cookies?.accessToken || req.headers.authorization?.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({ error: 'Access token missing', code: 'NO_TOKEN' });
@@ -21,7 +21,7 @@ export const verifyAuth = (req, res, next) => {
 
 export const verifyRefreshToken = (req, res, next) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const refreshToken = req.cookies?.refreshToken;
 
     if (!refreshToken) {
       return res.status(401).json({ error: 'Refresh token missing', code: 'NO_REFRESH_TOKEN' });
