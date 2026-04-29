@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import * as Icons from 'lucide-react';
 
 const MENU_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'Grid3x3' },
+  { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard' },
   { id: 'notes', label: 'Notes', path: '/notes', icon: 'FileText' },
-  { id: 'tasks', label: 'Tasks', path: '/tasks', icon: 'CheckSquare2' },
+  { id: 'tasks', label: 'Tasks', path: '/tasks', icon: 'CheckSquare' },
   { id: 'focus', label: 'Focus Mode', path: '/focus', icon: 'Zap' },
   { id: 'assistant', label: 'AI Assistant', path: '/assistant', icon: 'Sparkles' },
   { id: 'jobs', label: 'Jobs & Links', path: '/jobs', icon: 'Link2' },
