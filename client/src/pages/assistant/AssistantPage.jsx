@@ -34,7 +34,8 @@ export default function AssistantPage() {
       })));
     } catch (err) {
       console.error('Failed to send assistant message:', err);
-      setError('Could not send message. Please try again.');
+      const errorMsg = err.response?.data?.message || 'Could not send message. Please try again.';
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
