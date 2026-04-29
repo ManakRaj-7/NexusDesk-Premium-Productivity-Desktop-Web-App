@@ -30,7 +30,11 @@ export const Header = () => {
         </button>
 
         <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-dark-hover">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-accent-500" />
+          {user?.profile?.avatar ? (
+            <img src={user.profile.avatar} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-500 to-accent-500" />
+          )}
           <span className="text-sm font-medium">{user?.username || 'User'}</span>
         </div>
 

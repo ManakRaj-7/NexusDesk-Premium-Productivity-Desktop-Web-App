@@ -14,7 +14,7 @@ export const loginSchema = z.object({
 export const updateProfileSchema = z.object({
   fullName: z.string().optional(),
   bio: z.string().optional(),
-  avatar: z.string().url().optional(),
+  avatar: z.string().optional(),
 });
 
 export const createNoteSchema = z.object({
@@ -48,6 +48,6 @@ export const createLinkSchema = z.object({
 });
 
 export const createSessionSchema = z.object({
-  type: z.enum(['pomodoro', 'focus']),
+  type: z.enum(['pomodoro', 'focus', 'short_break', 'long_break', 'custom']),
   duration: z.number().positive(),
 });

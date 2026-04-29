@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { useAuth } from './hooks';
 import { AppRoutes } from './routes';
 import { initKeyboardShortcuts } from './utils/keyboard';
 
 export default function App() {
   const { isAuthenticated, getProfile } = useAuth();
+  const theme = useSelector((state) => state.ui.theme);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+      document.documentElement.classList.add('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     const initializeApp = async () => {

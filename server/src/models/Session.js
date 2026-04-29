@@ -9,7 +9,7 @@ const sessionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['pomodoro', 'focus'],
+      enum: ['pomodoro', 'focus', 'short_break', 'long_break', 'custom'],
       default: 'pomodoro',
     },
     duration: {

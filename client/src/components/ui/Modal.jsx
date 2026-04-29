@@ -39,9 +39,9 @@ export const Modal = ({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-dark-card border border-dark-border rounded-2xl shadow-soft-lg z-50 w-full mx-4 ${sizeClasses[size]}`}
+            className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-dark-card border border-dark-border rounded-2xl shadow-soft-lg z-50 w-full mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]}`}
           >
-            <div className="flex items-center justify-between p-6 border-b border-dark-border">
+            <div className="flex items-center justify-between p-6 border-b border-dark-border shrink-0">
               <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
               <button
                 onClick={onClose}
@@ -50,7 +50,7 @@ export const Modal = ({
                 <X size={20} />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto">
               {children}
             </div>
           </motion.div>

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '../../components/layout';
 import { Card, Button } from '../../components/ui';
 import { dashboardService } from '../../services';
@@ -8,6 +9,7 @@ import { Plus } from 'lucide-react';
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { data } = useSelector((state) => state.dashboard);
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-slate-100">Today's Tasks</h2>
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" onClick={() => navigate('/tasks')}>
                 <Plus size={16} />
                 Add Task
               </Button>

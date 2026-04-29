@@ -1,14 +1,5 @@
 import Conversation from '../models/Conversation.js';
-
-const MOCK_RESPONSES = [
-  "That's an interesting thought! I can help you explore that further.",
-  "Based on what you've shared, here are some key points to consider...",
-  "I understand. Let me break this down for you.",
-  "Great question! This relates to several important aspects.",
-  "I see where you're coming from. Have you thought about...",
-  "That's a common challenge. Here are some strategies that might help.",
-  "Exactly! This is crucial for productivity and focus.",
-];
+import axios from 'axios';
 
 export const sendMessage = async (req, res, next) => {
   try {
@@ -44,13 +35,51 @@ export const sendMessage = async (req, res, next) => {
       timestamp: new Date(),
     });
 
-    // Generate mock response
-    const mockResponse =
-      MOCK_RESPONSES[Math.floor(Math.random() * MOCK_RESPONSES.length)];
+    // Fetch real answer from Wikipedia
+    let assistantReply = "I'm sorry, I couldn't find an answer to that right now.";
+    try {
+      const searchRes = await axios.get(`https://en.wikipedia.org/w/api.php`, {
+        params: {
+          action: 'query',
+          list: 'search',
+          srsearch: message,
+          utf8: '',
+          format: 'json',
+        }
+      });
+      
+      const searchResults = searchRes.data.query.search;
+      if (searchResults && searchResults.length > 0) {
+        const title = searchResults[0].title;
+        const pageRes = await axios.get(`https://en.wikipedia.org/w/api.php`, {
+          params: {
+            action: 'query',
+            prop: 'extracts',
+            exintro: true,
+            explaintext: true,
+            titles: title,
+            format: 'json',
+          }
+        });
+        
+        const pages = pageRes.data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        const extract = pages[pageId].extract;
+        
+        if (extract) {
+          assistantReply = `According to my search on **${title}**:\n\n${extract}`;
+        }
+      } else {
+        assistantReply = "I couldn't find any factual information on that topic. Could you try rephrasing?";
+      }
+    } catch (apiErr) {
+      console.error('Wikipedia API error:', apiErr);
+      assistantReply = "I'm having trouble connecting to my knowledge base at the moment. Please try again later.";
+    }
 
     conversation.messages.push({
       role: 'assistant',
-      content: mockResponse,
+      content: assistantReply,
       timestamp: new Date(),
     });
 

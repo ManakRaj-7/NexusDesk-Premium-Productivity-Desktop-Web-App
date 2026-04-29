@@ -10,6 +10,7 @@ export const createTask = async (req, res, next) => {
       title,
       description,
       priority,
+      status: 'todo',
       dueDate: dueDate ? new Date(dueDate) : null,
       folderId,
       userId: req.user.userId,
