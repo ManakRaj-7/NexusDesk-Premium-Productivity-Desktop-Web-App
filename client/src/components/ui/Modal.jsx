@@ -35,12 +35,15 @@ export const Modal = ({
             onClick={onClose}
             className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
           />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className={`fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-dark-card border border-dark-border rounded-2xl shadow-soft-lg z-50 w-full mx-4 flex flex-col max-h-[90vh] ${sizeClasses[size]}`}
-          >
+          <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none px-4">
+            <motion.div
+              drag
+              dragMomentum={false}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`pointer-events-auto bg-dark-card border border-dark-border rounded-2xl shadow-soft-lg w-full flex flex-col max-h-[90vh] ${sizeClasses[size]} cursor-move`}
+            >
             <div className="flex items-center justify-between p-6 border-b border-dark-border shrink-0">
               <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
               <button
@@ -50,10 +53,11 @@ export const Modal = ({
                 <X size={20} />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto">
+            <div className="p-6 overflow-y-auto cursor-auto">
               {children}
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
