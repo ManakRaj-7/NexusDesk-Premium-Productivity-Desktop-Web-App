@@ -27,11 +27,11 @@ export default function DashboardPage() {
 
   return (
     <MainLayout>
-      <div className="p-8">
+      <div className="space-y-6">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-100 mb-2">Welcome back!</h1>
-          <p className="text-slate-400">Here's what's happening in your workspace today.</p>
+        <div>
+          <h1 className="text-2xl md:text-4xl font-bold text-slate-100 mb-2">Welcome back!</h1>
+          <p className="text-sm md:text-base text-slate-400">Here's what's happening in your workspace today.</p>
         </div>
 
         {/* Stats Grid */}
