@@ -12,7 +12,7 @@ const seedDatabase = async () => {
   try {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/nexusdesk';
     await mongoose.connect(mongoUri);
-    console.log('✅ Connected to MongoDB');
+    console.log('Connected to MongoDB');
 
     // Clear existing data
     await User.deleteMany({});
@@ -22,7 +22,7 @@ const seedDatabase = async () => {
     await Link.deleteMany({});
     await Session.deleteMany({});
     await Settings.deleteMany({});
-    console.log('🗑️  Cleared existing data');
+    console.log('Cleared existing data');
 
     // Create demo user
     const demoUser = new User({
@@ -35,7 +35,7 @@ const seedDatabase = async () => {
       },
     });
     await demoUser.save();
-    console.log(`👤 Created demo user: ${demoUser.email}`);
+    console.log(`Created demo user: ${demoUser.email}`);
 
     // Create default settings
     const settings = new Settings({
@@ -43,7 +43,7 @@ const seedDatabase = async () => {
       theme: 'dark',
     });
     await settings.save();
-    console.log('⚙️  Created default settings');
+    console.log('Created default settings');
 
     // Create folders
     const folderData = [
@@ -57,7 +57,7 @@ const seedDatabase = async () => {
     const folders = await Folder.insertMany(
       folderData.map(f => ({ ...f, userId: demoUser._id }))
     );
-    console.log(`📁 Created ${folders.length} folders`);
+    console.log(`Created ${folders.length} folders`);
 
     // Create sample notes
     const notes = await Note.insertMany([
@@ -98,7 +98,7 @@ const seedDatabase = async () => {
         userId: demoUser._id,
       },
     ]);
-    console.log(`📝 Created ${notes.length} sample notes`);
+    console.log(`Created ${notes.length} sample notes`);
 
     // Create sample tasks
     const tasks = await Task.insertMany([
@@ -177,7 +177,7 @@ const seedDatabase = async () => {
         userId: demoUser._id,
       },
     ]);
-    console.log(`✅ Created ${tasks.length} sample tasks`);
+    console.log(`Created ${tasks.length} sample tasks`);
 
     // Create sample links
     const links = await Link.insertMany([
@@ -222,7 +222,7 @@ const seedDatabase = async () => {
         userId: demoUser._id,
       },
     ]);
-    console.log(`🔗 Created ${links.length} sample links`);
+    console.log(`Created ${links.length} sample links`);
 
     // Create sample focus sessions
     const sessions = await Session.insertMany([
@@ -245,7 +245,7 @@ const seedDatabase = async () => {
         completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
       },
     ]);
-    console.log(`⏱️  Created ${sessions.length} focus sessions`);
+    console.log(`Created ${sessions.length} focus sessions`);
 
     // Update user streak
     demoUser.focusStreak.current = 2;
@@ -253,17 +253,18 @@ const seedDatabase = async () => {
     demoUser.focusStreak.lastSessionDate = new Date();
     await demoUser.save();
 
-    console.log('\n✨ Database seeded successfully!');
-    console.log('\n🔐 Demo Credentials:');
+    console.log('\nDatabase seeded successfully!');
+    console.log('\nDemo Credentials:');
     console.log('   Email: demo@nexusdesk.com');
     console.log('   Password: DemoPass123');
 
     await mongoose.disconnect();
-    console.log('\n✅ Disconnected from MongoDB');
+    console.log('\nDisconnected from MongoDB');
   } catch (error) {
-    console.error('❌ Seeding error:', error);
+    console.error('Seeding error:', error);
     process.exit(1);
   }
 };
 
 seedDatabase();
+
