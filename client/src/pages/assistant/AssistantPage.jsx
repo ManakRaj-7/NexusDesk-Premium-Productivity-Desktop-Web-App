@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { MainLayout } from '../../components/layout';
-import { Card, Button, Input, Modal } from '../../components/ui';
-import { Send, Plus } from 'lucide-react';
+import { Button, Input } from '../../components/ui';
+import { assistantService } from '../../services';
+import { Send } from 'lucide-react';
 
 export default function AssistantPage() {
   const [messages, setMessages] = useState([
@@ -9,31 +10,47 @@ export default function AssistantPage() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
+  const [error, setError] = useState('');
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     const userMessage = { role: 'user', content: input };
+    const outgoingMessage = input;
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setError('');
 
-    // Simulate assistant response
-    setTimeout(() => {
-      const assistantMessage = {
-        role: 'assistant',
-        content: 'I understand. How can I help you with that?',
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+    try {
+      const response = await assistantService.sendMessage(outgoingMessage, conversationId);
+      const conversation = response.data.conversation;
+      setConversationId(conversation._id);
+      setMessages(conversation.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })));
+    } catch (err) {
+      console.error('Failed to send assistant message:', err);
+      setMessages((prev) => prev.filter((message) => message !== userMessage));
+      setError('Could not send message. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
     <MainLayout>
       <div className="p-8 max-w-2xl mx-auto h-[calc(100vh-120px)] flex flex-col">
         <h1 className="text-3xl font-bold text-slate-100 mb-6">AI Assistant</h1>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {error}
+          </div>
+        )}
 
         <div className="flex-1 bg-dark-card border border-dark-border rounded-xl p-6 mb-6 overflow-y-auto space-y-4">
           {messages.map((msg, idx) => (
