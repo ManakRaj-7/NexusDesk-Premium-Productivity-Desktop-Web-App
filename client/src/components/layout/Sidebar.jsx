@@ -15,9 +15,15 @@ const MENU_ITEMS = [
 ];
 
 export const Sidebar = () => {
-  const { sidebarOpen } = useUI();
+  const { sidebarOpen, toggleSidebar } = useUI();
   const location = useLocation();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  // Auto-close sidebar on any route change (handles back-button, command palette, etc.)
+  useEffect(() => {
+    if (sidebarOpen) toggleSidebar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
@@ -53,6 +59,7 @@ export const Sidebar = () => {
             <Link
               key={item.id}
               to={item.path}
+              onClick={() => { if (sidebarOpen) toggleSidebar(); }}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 isActive
                   ? 'bg-gradient-to-r from-primary-500/20 to-accent-500/20 text-primary-400 border border-primary-500/30'
