@@ -18,6 +18,9 @@ import settingsRoutes from './routes/settings.js';
 
 const app = express();
 
+// Trust proxy for secure cookies to work behind Render's load balancer
+app.set('trust proxy', 1);
+
 // Security & Middleware
 app.use(helmet());
 app.use(
