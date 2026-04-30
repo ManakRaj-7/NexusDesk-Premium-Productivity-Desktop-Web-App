@@ -4,6 +4,8 @@ import { useAuth } from './hooks';
 import { AppRoutes } from './routes';
 import { initKeyboardShortcuts } from './utils/keyboard';
 
+import { CommandPalette } from './components/ui/CommandPalette';
+
 export default function App() {
   const { isAuthenticated, getProfile } = useAuth();
   const theme = useSelector((state) => state.ui.theme);
@@ -38,7 +40,7 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = initKeyboardShortcuts({
       onCommandPalette: () => {
-        // Command palette will be implemented
+        // Handled directly inside CommandPalette component using custom event listener
       },
       onToggleSidebar: () => {
         // Sidebar toggle handled by Redux
@@ -59,5 +61,10 @@ export default function App() {
     );
   }
 
-  return <AppRoutes />;
+  return (
+    <>
+      <CommandPalette />
+      <AppRoutes />
+    </>
+  );
 }
