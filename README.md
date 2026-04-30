@@ -45,7 +45,7 @@ NexusDesk's AI isn't just a basic chatbot; it's a sophisticated productivity par
 - **MongoDB + Mongoose** (real database)
 - **JWT** (secure authentication with httpOnly cookies)
 - **Helmet** (security headers)
-- **CORS** (cross-origin requests)
+- **CORS & Trust Proxy** (configured for secure cross-origin requests between Vercel and Render)
 
 ## 📦 Deployment Architecture
 
