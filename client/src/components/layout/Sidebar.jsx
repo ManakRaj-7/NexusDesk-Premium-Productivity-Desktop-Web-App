@@ -1,4 +1,5 @@
 import { useUI } from '../../hooks';
+import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import * as Icons from 'lucide-react';
@@ -16,15 +17,34 @@ const MENU_ITEMS = [
 export const Sidebar = () => {
   const { sidebarOpen } = useUI();
   const location = useLocation();
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   return (
     <motion.aside
       initial={{ x: -250 }}
       animate={{ x: sidebarOpen ? 0 : -250 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="w-64 h-screen bg-dark-card border-r border-dark-border fixed left-0 top-16 z-20 overflow-y-auto"
+      className="w-64 h-[calc(100vh-64px)] bg-dark-card border-r border-dark-border fixed left-0 top-16 z-20 overflow-y-auto flex flex-col"
     >
-      <nav className="p-6 space-y-2">
+      <nav className="p-6 space-y-2 flex-1">
         {MENU_ITEMS.map((item) => {
           const IconComponent = Icons[item.icon];
           const isActive = location.pathname === item.path;
@@ -45,6 +65,18 @@ export const Sidebar = () => {
           );
         })}
       </nav>
+
+      {deferredPrompt && (
+        <div className="p-6 mt-auto">
+          <button
+            onClick={handleInstallClick}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary-500 text-white font-medium hover:bg-primary-600 transition-colors shadow-soft"
+          >
+            <Icons.Download size={18} />
+            Install App
+          </button>
+        </div>
+      )}
     </motion.aside>
   );
 };
