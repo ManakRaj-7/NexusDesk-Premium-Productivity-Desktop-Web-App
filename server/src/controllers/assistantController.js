@@ -2,10 +2,13 @@ import axios from 'axios';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Conversation from '../models/Conversation.js';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const geminiApiKey = process.env.GEMINI_API_KEY;
+const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 
 // Cache the last successful model name to reduce API calls
 let lastWorkingModel = "gemini-2.5-flash";
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const sendMessage = async (req, res, next) => {
   try {
@@ -43,6 +46,10 @@ export const sendMessage = async (req, res, next) => {
     let assistantReply = "";
     let lastError = null;
 
+    if (!genAI) {
+      return res.status(500).json({ message: 'AI backend misconfigured: missing GEMINI_API_KEY' });
+    }
+
     const systemMsg = "You are NexusDesk AI. Be extremely concise and bold key terms.";
     const userPrompt = searchContext ? `CONTEXT: ${searchContext}\n\nUSER: ${message}` : message;
 
@@ -55,11 +62,11 @@ export const sendMessage = async (req, res, next) => {
           const result = await model.generateContent({
             contents: [...history, { role: 'user', parts: [{ text: `${systemMsg}\n\n${userPrompt}` }] }]
           });
-          assistantReply = result.response.text();
+          assistantReply = await result.response.text();
         } catch (e) {
           // Fallback to no-history for this model if history fails (fixes 400s)
           const result = await model.generateContent(`${systemMsg}\n\n${userPrompt}`);
-          assistantReply = result.response.text();
+          assistantReply = await result.response.text();
         }
 
         if (assistantReply) {
@@ -69,7 +76,13 @@ export const sendMessage = async (req, res, next) => {
       } catch (err) {
         lastError = err;
         console.warn(`Model ${modelName} failed:`, err.message);
-        if (err.status === 429) break; // If rate limited, don't spam others
+        if (err.status === 429) {
+          if (modelName !== modelsToTry[modelsToTry.length - 1]) {
+            await sleep(1000);
+            continue;
+          }
+          break;
+        }
         continue;
       }
     }
