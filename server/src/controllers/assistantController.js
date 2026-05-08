@@ -18,6 +18,7 @@ const getModelNamesToTry = () => {
     normalizeModelName(lastWorkingModel),
     normalizeModelName(configuredModel),
     "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
     "gemini-2.0-flash",
   ];
 
@@ -34,7 +35,7 @@ const buildAssistantError = (errors) => {
 
   const notFoundError = errors.find((error) => error?.status === 404);
   if (notFoundError) {
-    const error = new Error("Gemini model unavailable. Set GEMINI_MODEL=gemini-2.5-flash in server/.env.");
+    const error = new Error("Gemini model unavailable. Set GEMINI_MODEL=gemini-2.5-flash-lite or gemini-2.5-flash in server/.env.");
     error.status = 502;
     return error;
   }
