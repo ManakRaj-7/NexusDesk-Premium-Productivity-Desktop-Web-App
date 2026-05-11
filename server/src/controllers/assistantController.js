@@ -1,10 +1,14 @@
 import axios from 'axios';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import Conversation from '../models/Conversation.js';
 
 const geminiApiKey = process.env.GEMINI_API_KEY;
 const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 const configuredModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+
+const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+const openRouterClient = openRouterApiKey ? new OpenAI({ apiKey: openRouterApiKey, baseURL: "https://openrouter.ai/api/v1" }) : null;
 
 // Cache the last successful model name to reduce API calls
 let lastWorkingModel = configuredModel;
@@ -68,61 +72,100 @@ export const sendMessage = async (req, res, next) => {
       } catch (err) { /* Silent fail */ }
     }
 
-    // 2. Build History
-    const history = conversation.messages.slice(-6).map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }],
-    }));
-
-    // 3. Smart Model Selection
-    const modelsToTry = getModelNamesToTry();
+    
+    // 2. Common Prep
     let assistantReply = "";
     const modelErrors = [];
 
-    if (!genAI) {
-      return res.status(500).json({ message: 'AI backend misconfigured: missing GEMINI_API_KEY' });
+    if (!genAI && !openRouterClient) {
+      return res.status(500).json({ message: 'AI backend misconfigured: missing API keys' });
     }
 
     const systemMsg = "You are NexusDesk AI. Be extremely concise and bold key terms.";
     const userPrompt = searchContext ? `CONTEXT: ${searchContext}\n\nUSER: ${message}` : message;
 
-    for (const modelName of modelsToTry) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        
-        // Try with history first
-        try {
-          const result = await model.generateContent({
-            contents: [...history, { role: 'user', parts: [{ text: `${systemMsg}\n\n${userPrompt}` }] }]
-          });
-          assistantReply = await result.response.text();
-        } catch (e) {
-          // Fallback to no-history for this model if history fails (fixes 400s)
-          const result = await model.generateContent(`${systemMsg}\n\n${userPrompt}`);
-          assistantReply = await result.response.text();
-        }
+    // 3. Try OpenRouter Free Models First
+    if (openRouterClient) {
+      const openRouterModels = [
+        "deepseek/deepseek-chat-v3:free",
+        "qwen/qwen3-coder:free",
+        "meta-llama/llama-3.3-70b-instruct:free"
+      ];
 
-        if (assistantReply) {
-          lastWorkingModel = modelName; // Save successful model
-          break;
-        }
-      } catch (err) {
-        modelErrors.push(err);
-        console.warn(`Model ${modelName} failed:`, err.message);
-        if (err.status === 429) {
-          if (modelName !== modelsToTry[modelsToTry.length - 1]) {
-            await sleep(1000);
-            continue;
+      const openRouterHistory = conversation.messages.slice(-6).map(msg => ({
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content
+      }));
+      openRouterHistory.unshift({ role: 'system', content: systemMsg });
+      openRouterHistory.push({ role: 'user', content: userPrompt });
+
+      for (const modelName of openRouterModels) {
+        try {
+          console.log(`Trying OpenRouter model: ${modelName}`);
+          const completion = await openRouterClient.chat.completions.create({
+            model: modelName,
+            messages: openRouterHistory,
+          });
+          assistantReply = completion.choices[0].message.content;
+          if (assistantReply) {
+            console.log(`OpenRouter model ${modelName} succeeded.`);
+            break;
           }
-          break;
+        } catch (err) {
+          modelErrors.push(err);
+          console.warn(`OpenRouter Model ${modelName} failed:`, err.message);
+          continue;
         }
-        continue;
+      }
+    }
+
+    // 4. Fallback to Gemini
+    if (!assistantReply && genAI) {
+      console.log("Switching to Gemini Fallback...");
+      const modelsToTry = getModelNamesToTry();
+      
+      const history = conversation.messages.slice(-6).map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      }));
+
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`Trying Gemini model: ${modelName}`);
+          const model = genAI.getGenerativeModel({ model: modelName });
+          
+          try {
+            const result = await model.generateContent({
+              contents: [...history, { role: 'user', parts: [{ text: `${systemMsg}\n\n${userPrompt}` }] }]
+            });
+            assistantReply = await result.response.text();
+          } catch (e) {
+            const result = await model.generateContent(`${systemMsg}\n\n${userPrompt}`);
+            assistantReply = await result.response.text();
+          }
+
+          if (assistantReply) {
+            console.log(`Gemini model ${modelName} succeeded.`);
+            lastWorkingModel = modelName;
+            break;
+          }
+        } catch (err) {
+          modelErrors.push(err);
+          console.warn(`Gemini Model ${modelName} failed:`, err.message);
+          if (err.status === 429) {
+            if (modelName !== modelsToTry[modelsToTry.length - 1]) {
+              await sleep(1000);
+              continue;
+            }
+            break;
+          }
+          continue;
+        }
       }
     }
 
     if (!assistantReply) throw buildAssistantError(modelErrors);
-
-    // 4. Save and Respond
+// 4. Save and Respond
     conversation.messages.push({ role: 'user', content: message, timestamp: new Date() });
     conversation.messages.push({ role: 'assistant', content: assistantReply, timestamp: new Date() });
     await conversation.save();
