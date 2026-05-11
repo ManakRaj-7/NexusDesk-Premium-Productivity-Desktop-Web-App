@@ -4,7 +4,7 @@
 
 NexusDesk combines the power of a workspace manager with the elegance of a desktop application. It's built with a modern MERN stack and designed to look professional, minimal, and beautiful.
 
-## 🚀 Live Demo
+## Live Demo
 **[NexusDesk Premium Productivity](https://nexus-desk-premium-productivity-des-umber.vercel.app/)**
 
 ## ✨ Features
