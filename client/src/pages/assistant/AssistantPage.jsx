@@ -6,12 +6,13 @@ import { Send, Trash2, Bot } from 'lucide-react';
 
 export default function AssistantPage() {
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hello! I\'m your AI assistant. How can I help you today?' },
+    { role: 'assistant', content: 'Hello! I\'m your Gemini 3 Flash assistant. How can I help you today?' },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [error, setError] = useState('');
+  const [aiStatus, setAiStatus] = useState('Gemini 3 Flash via OpenRouter');
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -27,23 +28,31 @@ export default function AssistantPage() {
     try {
       const response = await assistantService.sendMessage(outgoingMessage, conversationId);
       const conversation = response.data.conversation;
+      const ai = response.data.ai;
       setConversationId(conversation._id);
       setMessages(conversation.messages.map((message) => ({
         role: message.role,
         content: message.content,
       })));
+      if (ai?.fallbackActivated) {
+        setAiStatus(`Fallback active: ${ai.label}`);
+      } else if (ai?.label) {
+        setAiStatus(`${ai.label} via ${ai.provider || 'OpenRouter'}`);
+      }
     } catch (err) {
       console.error('Failed to send assistant message:', err);
       const errorMsg = err.response?.data?.message || 'Could not send message. Please try again.';
       setError(errorMsg);
+      setAiStatus('AI connection needs attention');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleClearChat = () => {
-    setMessages([{ role: 'assistant', content: 'Hello! I\'m your AI assistant. How can I help you today?' }]);
+    setMessages([{ role: 'assistant', content: 'Hello! I\'m your Gemini 3 Flash assistant. How can I help you today?' }]);
     setConversationId(null);
+    setAiStatus('Gemini 3 Flash via OpenRouter');
   };
 
   const renderContent = (content) => {
@@ -72,7 +81,7 @@ export default function AssistantPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-100">AI Assistant</h1>
-              <p className="text-xs text-slate-500">Connected to live knowledge</p>
+              <p className="text-xs text-slate-500">{aiStatus}</p>
             </div>
           </div>
           <Button variant="secondary" size="sm" onClick={handleClearChat} className="text-slate-400 hover:text-red-400">
@@ -122,7 +131,7 @@ export default function AssistantPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
-            placeholder={isLoading ? "Thinking..." : "Ask me anything..."}
+            placeholder={isLoading ? "Gemini 3 Flash is thinking..." : "Ask me anything..."}
             className={`flex-1 bg-transparent border-none focus:ring-0 text-slate-100 px-4 py-2 placeholder-slate-600 text-sm ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
           <Button
